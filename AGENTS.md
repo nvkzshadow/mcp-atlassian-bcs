@@ -76,7 +76,7 @@ uv run pytest --cov=src/mcp_atlassian --cov-report=term-missing  # coverage
 - **OAuth 2.0**: Supported on both Cloud and Server/Data Center. PAT is also available for Server/DC. Basic auth (user + API token) works on both Cloud and Server/DC.
 - **Read-only mode**: `READ_ONLY_MODE=true` blocks all write tools at server level.
 - **Type checking**: pre-commit runs **mypy** (strict mode).
-- **Environment**: See `.env.example` for all configuration options (auth, proxy, SLA, filtering).
+- **Environment**: See `.env.example` for all configuration options (auth, proxy, SLA, filtering). Optional `CONTENT_MASK_SERVICE_URL` enables sending Jira/Confluence text content to an external mask/verification service before returning it.
 
 ---
 

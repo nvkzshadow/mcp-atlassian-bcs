@@ -13,6 +13,12 @@ from pydantic import BeforeValidator, Field
 from mcp_atlassian.exceptions import MCPAtlassianAuthenticationError
 from mcp_atlassian.models.confluence import ConfluenceAttachment
 from mcp_atlassian.servers.dependencies import get_confluence_fetcher
+from mcp_atlassian.utils.content_mask import (
+    mask_confluence_comment_dict,
+    mask_confluence_diff_result,
+    mask_confluence_page_dict,
+    mask_page_content,
+)
 from mcp_atlassian.utils.decorators import (
     check_write_access,
 )
@@ -121,6 +127,8 @@ async def search(
             query, limit=limit, spaces_filter=spaces_filter
         )
     search_results = [page.to_simplified_dict() for page in pages]
+    for item in search_results:
+        mask_confluence_page_dict(item)
     return json.dumps(search_results, indent=2, ensure_ascii=False)
 
 
@@ -239,8 +247,10 @@ async def get_page(
 
     if include_metadata:
         result = {"metadata": page_object.to_simplified_dict()}
+        mask_confluence_page_dict(result["metadata"])
     else:
-        result = {"content": {"value": page_object.content}}
+        content = mask_page_content(page_object.content)
+        result = {"content": {"value": content}}
 
     return json.dumps(result, indent=2, ensure_ascii=False)
 
@@ -328,6 +338,8 @@ async def get_page_children(
             include_folders=include_folders,
         )
         child_pages = [page.to_simplified_dict() for page in pages]
+        for item in child_pages:
+            mask_confluence_page_dict(item)
         result = {
             "parent_id": parent_id,
             "count": len(child_pages),
@@ -374,6 +386,8 @@ async def get_comments(
     confluence_fetcher = await get_confluence_fetcher(ctx)
     comments = confluence_fetcher.get_page_comments(page_id)
     formatted_comments = [comment.to_simplified_dict() for comment in comments]
+    for comment in formatted_comments:
+        mask_confluence_comment_dict(comment)
     return json.dumps(formatted_comments, indent=2, ensure_ascii=False)
 
 
@@ -1042,6 +1056,7 @@ async def get_page_history(
             convert_to_markdown=convert_to_markdown,
         )
         result = page.to_simplified_dict()
+        mask_confluence_page_dict(result)
         return json.dumps(result, indent=2, ensure_ascii=False)
     except MCPAtlassianAuthenticationError as e:
         logger.error(f"Authentication error getting page history: {e}")
@@ -1117,6 +1132,7 @@ async def get_page_diff(
             from_version=from_version,
             to_version=to_version,
         )
+        mask_confluence_diff_result(result)
         return json.dumps(result, indent=2, ensure_ascii=False)
     except MCPAtlassianAuthenticationError as e:
         logger.error(f"Authentication error getting page diff: {e}")

@@ -16,6 +16,7 @@ from mcp_atlassian.jira.forms_common import convert_datetime_to_timestamp
 from mcp_atlassian.models.jira import JiraAttachment
 from mcp_atlassian.models.jira.common import JiraUser
 from mcp_atlassian.servers.dependencies import get_jira_fetcher
+from mcp_atlassian.utils.content_mask import mask_issue_content
 from mcp_atlassian.utils.decorators import check_write_access
 from mcp_atlassian.utils.media import (
     ATTACHMENT_MAX_BYTES,
@@ -380,6 +381,7 @@ async def get_issue(
         update_history=update_history,
     )
     result = issue.to_simplified_dict()
+    result = mask_issue_content(result)
     return json.dumps(result, indent=2, ensure_ascii=False)
 
 
@@ -482,6 +484,9 @@ async def search(
         page_token=page_token,
     )
     result = search_result.to_simplified_dict()
+    for issue in result.get("issues") or []:
+        if isinstance(issue, dict):
+            mask_issue_content(issue)
     return json.dumps(result, indent=2, ensure_ascii=False)
 
 

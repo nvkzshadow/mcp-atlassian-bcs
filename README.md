@@ -51,6 +51,8 @@ Add to your Claude Desktop or Cursor MCP configuration:
 
 > **Server/Data Center users**: Use `JIRA_PERSONAL_TOKEN` instead of `JIRA_USERNAME` + `JIRA_API_TOKEN`. See [Authentication](https://mcp-atlassian.soomiles.com/docs/authentication) for details.
 
+**Optional — content masking**: To send Jira/Confluence text content through an external mask/verification service before returning it to the client, set `CONTENT_MASK_SERVICE_URL` to the service endpoint (e.g. `https://apis.tusvc.bcs.ru/mai-ms-masking-it-proxy/mask/chat`). If unset, content is returned as-is.
+
 ### 3. Start Using
 
 Ask your AI assistant to:
