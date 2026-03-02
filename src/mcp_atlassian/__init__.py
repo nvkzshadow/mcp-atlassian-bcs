@@ -50,6 +50,9 @@ except PackageNotFoundError:
     # package is not installed
     __version__ = "0.0.0"
 
+# Load .env so MCP_LOG_FILE etc. are available when not set by Cursor/IDE
+load_dotenv(override=False)
+
 # Initialize logging with appropriate level
 logging_level = logging.WARNING
 if is_env_truthy("MCP_VERBOSE"):
@@ -57,9 +60,12 @@ if is_env_truthy("MCP_VERBOSE"):
 
 # Set up logging to STDOUT if MCP_LOGGING_STDOUT is set to true
 logging_stream = sys.stdout if is_env_truthy("MCP_LOGGING_STDOUT") else sys.stderr
+_log_file = os.environ.get("MCP_LOG_FILE") or None
+if _log_file is not None:
+    _log_file = _log_file.strip() or None
 
 # Set up logging using the utility function
-logger = setup_logging(logging_level, logging_stream)
+logger = setup_logging(logging_level, logging_stream, log_file=_log_file)
 
 
 async def _watch_parent_exit(stop_event: threading.Event) -> None:
@@ -271,6 +277,9 @@ def main(
     - Personal Access Token (Server/Data Center)
     - OAuth 2.0 (Cloud and Data Center)
     """
+    # Load .env early so MCP_LOG_FILE (and others) are available before setup_logging
+    load_dotenv(override=False)
+
     # Logging level logic
     if verbose == 1:
         current_logging_level = logging.INFO
@@ -287,9 +296,12 @@ def main(
 
     # Set up logging to STDOUT if MCP_LOGGING_STDOUT is set to true
     logging_stream = sys.stdout if is_env_truthy("MCP_LOGGING_STDOUT") else sys.stderr
+    log_file = os.environ.get("MCP_LOG_FILE") or None
+    if log_file is not None:
+        log_file = log_file.strip() or None
 
     global logger
-    logger = setup_logging(current_logging_level, logging_stream)
+    logger = setup_logging(current_logging_level, logging_stream, log_file=log_file)
     logger.debug(f"Logging level set to: {logging.getLevelName(current_logging_level)}")
     logger.debug(
         f"Logging stream set to: {'stdout' if logging_stream is sys.stdout else 'stderr'}"

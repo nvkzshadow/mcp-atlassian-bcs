@@ -6,12 +6,23 @@ output stream based on their level.
 """
 
 import logging
+import os
 import sys
 from typing import TextIO
 
 
+class FlushingFileHandler(logging.FileHandler):
+    """FileHandler that flushes after every emit so logs appear in file immediately."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        super().emit(record)
+        self.flush()
+
+
 def setup_logging(
-    level: int = logging.WARNING, stream: TextIO = sys.stderr
+    level: int = logging.WARNING,
+    stream: TextIO = sys.stderr,
+    log_file: str | None = None,
 ) -> logging.Logger:
     """
     Configure MCP-Atlassian logging with level-based stream routing.
@@ -19,6 +30,8 @@ def setup_logging(
     Args:
         level: The minimum logging level to display (default: WARNING)
         stream: The stream to write logs to (default: sys.stderr)
+        log_file: Optional path to a file; if set, logs are also written there
+                  (e.g. for viewing in Cursor when server stderr is not visible).
 
     Returns:
         The configured logger instance
@@ -31,14 +44,42 @@ def setup_logging(
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
 
-    # Add the level-dependent handler
-    handler = logging.StreamHandler(stream)
     formatter = logging.Formatter("%(levelname)s - %(name)s - %(message)s")
-    handler.setFormatter(formatter)
-    root_logger.addHandler(handler)
 
-    # Configure specific loggers
-    loggers = ["mcp-atlassian", "mcp.server", "mcp.server.lowlevel.server", "mcp-jira"]
+    # Stream handler (stderr/stdout)
+    stream_handler = logging.StreamHandler(stream)
+    stream_handler.setFormatter(formatter)
+    root_logger.addHandler(stream_handler)
+
+    # Optional file handler (so logs can be viewed in Cursor)
+    if log_file and log_file.strip():
+        file_path = os.path.abspath(log_file.strip())
+        try:
+            file_handler = FlushingFileHandler(
+                file_path, mode="a", encoding="utf-8"
+            )
+            file_handler.setFormatter(formatter)
+            root_logger.addHandler(file_handler)
+            # Confirm write so we know the file is used (and flush immediately)
+            root_logger.warning("MCP logging to file: %s", file_path)
+            for h in root_logger.handlers:
+                if getattr(h, "flush", None):
+                    h.flush()
+        except OSError as e:
+            root_logger.warning(
+                "Failed to open log file %r; logging to file disabled: %s",
+                file_path,
+                e,
+            )
+
+    # Configure specific loggers (mcp_atlassian.* for content_mask and other utils)
+    loggers = [
+        "mcp-atlassian",
+        "mcp_atlassian",
+        "mcp.server",
+        "mcp.server.lowlevel.server",
+        "mcp-jira",
+    ]
 
     for logger_name in loggers:
         logger = logging.getLogger(logger_name)

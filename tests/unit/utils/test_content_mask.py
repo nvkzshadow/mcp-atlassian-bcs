@@ -79,6 +79,25 @@ class TestMaskText:
         assert result == "original"
 
     @patch("mcp_atlassian.utils.content_mask.requests.post")
+    def test_returns_masked_from_nested_mask_response(self, mock_post):
+        """Service returns {'masked_data': {'masked_text': '...'}} (mai-ms-masking-it-proxy)."""
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "masked_data": {
+                    "text": "original",
+                    "masked_text": "{PERSON_1} родился {DATE_1}",
+                    "masks_dict": {"{PERSON_1}": "Иван", "{DATE_1}": "01.01.1990"},
+                    "timing_steps": {"step1": 0.1},
+                }
+            },
+            raise_for_status=MagicMock(),
+        )
+        with patch.dict("os.environ", {"CONTENT_MASK_SERVICE_URL": "https://mask.example.com"}):
+            result = mask_text("original")
+        assert result == "{PERSON_1} родился {DATE_1}"
+
+    @patch("mcp_atlassian.utils.content_mask.requests.post")
     def test_returns_original_when_response_missing_text_key(self, mock_post):
         mock_post.return_value = MagicMock(
             status_code=200,

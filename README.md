@@ -53,6 +53,26 @@ Add to your Claude Desktop or Cursor MCP configuration:
 
 **Optional — content masking**: To send Jira/Confluence text content through an external mask/verification service before returning it to the client, set `CONTENT_MASK_SERVICE_URL` to the service endpoint (e.g. `https://apis.tusvc.bcs.ru/mai-ms-masking-it-proxy/mask/chat`). If unset, content is returned as-is.
 
+**Optional — log file**: To write server logs to a file (e.g. to view them in Cursor when the MCP client panel does not show server stderr), set `MCP_LOG_FILE` to a file path (e.g. `mcp-atlassian.log`). Logs are appended to the file in UTF-8.
+
+**Running with local code (e.g. in Cursor)**: To avoid "program not found" when Cursor spawns the process (wrong working directory or `uv` not in PATH), use the wrapper script as `command` with the **full path** to this repo:
+
+```json
+"mcp-atlassian": {
+  "command": "C:\\Users\\Anton\\Downloads\\atlassian\\mcp-atlassian-bcs\\run-mcp-atlassian.bat",
+  "args": [],
+  "env": {
+    "JIRA_URL": "https://jira.bcs.ru",
+    "JIRA_PERSONAL_TOKEN": "<your-token>",
+    "CONFLUENCE_URL": "https://confluence.bcs.ru",
+    "CONFLUENCE_PERSONAL_TOKEN": "<your-token>",
+    "CONTENT_MASK_SERVICE_URL": "https://apis.tusvc.bcs.ru/mai-ms-masking-it-proxy/mask/chat"
+  }
+}
+```
+
+Replace the path with your actual clone path. The script [run-mcp-atlassian.bat](run-mcp-atlassian.bat) switches to the project directory and runs `uv run mcp-atlassian` there. If your workspace root is this folder and `uv` is in PATH, you can instead use `"command": "uv"` and `"args": ["run", "mcp-atlassian"]`.
+
 ### 3. Start Using
 
 Ask your AI assistant to:
